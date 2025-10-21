@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Camera View</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: black;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      video {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+      }
+      button {
+        background: #ff006e;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 18px;
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <video id="camera" autoplay playsinline></video>
+    <button onclick="takePhoto()">📸 Capture</button>
+    <canvas id="snapshot" style="display:none;"></canvas>
+
+    <script>
+      const video = document.getElementById("camera");
+      const canvas = document.getElementById("snapshot");
+
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => video.srcObject = stream)
+        .catch(err => alert("Camera access failed: " + err));
+
+      function takePhoto() {
+        const context = canvas.getContext("2d");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
+        const image = canvas.toDataURL("image/png");
+        alert("Photo captured!");
+        console.log(image);
+      }
+    </script>
+  </body>
+</html>
