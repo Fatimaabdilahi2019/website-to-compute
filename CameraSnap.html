@@ -79,11 +79,17 @@
     };
 
     function takePhoto() {
-      const context = canvas.getContext("2d");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0);
-      alert("Photo captured!");
+  const context = canvas.getContext("2d");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  context.drawImage(video, 0, 0);
+
+  // Download image automatically
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png");
+  link.download = `photo_${Date.now()}.png`;
+  link.click();
+});
     }
 
     // Start camera on page load
