@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snapchat-style Camera</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: black;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      video {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+      }
+      button {
+        background: #ff006e;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 18px;
+        margin-top: 12px;
+        cursor: pointer;
+      }
+      #controls {
+        margin-top: 12px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <video id="camera" autoplay playsinline></video>
+    <canvas id="snapshot" style="display:none;"></canvas>
+
+    <div id="controls">
+      <button id="flipBtn">🔄 Flip</button>
+      <button id="captureBtn">📸 Capture</button>
+      <button id="saveBtn">💾 Save</button>
+      <button id="filterNone">Normal</button>
+      <button id="filterGray">Grayscale</button>
+      <button id="filterSepia">Sepia</button>
+    </div>
+
+    <script>
+      const video = document.getElementById("camera");
+      const canvas = document.getElementById("snapshot");
+
+      let useFrontCamera = true;
+      let currentFilter = 'none';
+
+      const flipBtn = document.getElementById("flipBtn");
+      const captureBtn = document.getElementById("captureBtn");
+      const saveBtn = document.getElementById("saveBtn");
+
+      document.getElementById('filterNone').onclick = () => { currentFilter = 'none'; };
+      document.getElementById('filterGray').onclick = () => { currentFilter = 'grayscale(100%)'; };
+      document.getElementById('filterSepia').onclick = () => { currentFilter = 'sepia(100%)'; };
+
+      async function startCamera() {
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach(track => track.stop());
+        }
+
+        const constraints = {
+          video: { facingMode: useFrontCamera ? "user" : "environment" }
+        };
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          video.srcObject = stream;
+        } catch (err) {
+          alert("Camera access failed: " + err);
+        }
+      }
+
+      // Flip camera
+      flipBtn.onclick = () => {
+        useFrontCamera = !useFrontCamera;
+        startCamera();
+      };
+
+      // Capture photo
+      captureBtn.onclick = takePhoto;
+
+      // Save photo manually
+      saveBtn.onclick = () => {
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = `photo_${Date.now()}.png`;
+        link.click();
+      };
+
+      // Take photo function
+      function takePhoto() {
+        const context = canvas.getContext("2d");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.filter = currentFilter;
+        context.drawImage(video, 0, 0);
+
+        // Automatically download
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = `photo_${Date.now()}.png`;
+        link.click();
+      }
+
+      // Start camera on load
+      startCamera();
+    </script>
+  </body>
+</html>
