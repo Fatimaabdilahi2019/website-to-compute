@@ -112,9 +112,7 @@
         link.download = `photo_${Date.now()}.png`;
         link.click();
       };
-
-      // Take photo function
-      function takePhoto() {const flash = document.getElementById('flash');
+const flash = document.getElementById('flash');
 
 function flashEffect() {
   flash.style.opacity = 0.8;
@@ -122,6 +120,8 @@ function flashEffect() {
     flash.style.opacity = 0;
   }, 100);
       }
+      // Take photo function
+      function takePhoto() {flashEffect() {
         const context = canvas.getContext("2d");
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
