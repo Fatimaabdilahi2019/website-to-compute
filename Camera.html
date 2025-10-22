@@ -31,6 +31,7 @@
       }
     </style>
   </head>
+  
   <body>
     <video id="camera" autoplay playsinline></video>
     <button onclick="takePhoto()">📸 Capture</button>
@@ -55,4 +56,50 @@
       }
     </script>
   </body>
-</html>
+</html> 
+<div id="controls" style="margin-top:12px; display:flex; gap:12px;">
+  <button id="flipBtn">🔄 Flip</button>
+  <button id="captureBtn">📸 Capture</button>
+  <button id="saveBtn">💾 Save</button>
+</div>
+let useFrontCamera = true;
+const flipBtn = document.getElementById("flipBtn");
+const captureBtn = document.getElementById("captureBtn");
+const saveBtn = document.getElementById("saveBtn");
+
+async function startCamera() {
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(track => track.stop());
+  }
+
+  const constraints = {
+    video: { facingMode: useFrontCamera ? "user" : "environment" }
+  };
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
+  } catch (err) {
+    alert("Camera access failed: " + err);
+  }
+}
+
+// Flip camera
+flipBtn.onclick = () => {
+  useFrontCamera = !useFrontCamera;
+  startCamera();
+};
+
+// Capture photo
+captureBtn.onclick = takePhoto;
+
+// Save photo
+saveBtn.onclick = () => {
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png");
+  link.download = `photo_${Date.now()}.png`;
+  link.click();
+};
+
+// Start camera on load
+startCamera();
