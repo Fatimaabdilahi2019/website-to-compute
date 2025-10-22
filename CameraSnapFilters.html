@@ -52,7 +52,18 @@
       <button id="filterGray">Grayscale</button>
       <button id="filterSepia">Sepia</button>
     </div>
-
+<div id="flash" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 0.2s ease;
+"></div>
     <script>
       const video = document.getElementById("camera");
       const canvas = document.getElementById("snapshot");
@@ -103,7 +114,14 @@
       };
 
       // Take photo function
-      function takePhoto() {
+      function takePhoto() {const flash = document.getElementById('flash');
+
+function flashEffect() {
+  flash.style.opacity = 0.8;
+  setTimeout(() => {
+    flash.style.opacity = 0;
+  }, 100);
+      }
         const context = canvas.getContext("2d");
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
