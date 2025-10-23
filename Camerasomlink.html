@@ -1,94 +1,30 @@
 <!DOCTYPE html>
 <html lang="so">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Somlink Camera — Fixed Flip & Fit</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Somlink Camera</title>
 <style>
-  :root {
-    --btn-bg: rgba(255,6,110,0.18);
-    --btn-size: 62px;
-  }
-  html,body { height:100%; margin:0; background:#000; -webkit-user-select:none; user-select:none; }
+  html, body { margin:0; padding:0; height:100%; background:#000; overflow:hidden; font-family:sans-serif; }
   #app { position:relative; width:100vw; height:100vh; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  video { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1; background:#000; transform-origin:center center; }
+  #overlay { position:absolute; top:0; left:0; width:100%; height:100%; z-index:2; pointer-events:none; }
 
-  /* video fills container; object-fit controlled dynamically */
-  video {
-    position:absolute;
-    top:0; left:0;
-    width:100%;
-    height:100%;
-    object-fit:cover; /* cover but we set aspectRatio constraint to reduce crop */
-    transform-origin:center center;
-    -webkit-transform-origin:center center;
-    z-index:1;
-    background:#000;
-  }
+  .top-right { position:absolute; top:16px; right:14px; display:flex; flex-direction:column; gap:10px; z-index:50; }
+  .bottom-center { position:absolute; bottom:18px; left:0; right:0; display:flex; justify-content:center; gap:18px; z-index:50; pointer-events:auto; }
 
-  /* overlay canvas (face boxes or other) */
-  #overlay {
-    position:absolute;
-    top:0; left:0;
-    width:100%;
-    height:100%;
-    z-index:2;
-    pointer-events:none;
-  }
+  button { width:62px; height:62px; border-radius:50%; border:none; background:rgba(255,6,110,0.18); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.45); -webkit-tap-highlight-color:transparent; }
+  button.small { width:46px; height:46px; font-size:18px; border-radius:12px; }
 
-  /* controls */
-  .top-right {
-    position:absolute; right:14px; top:16px; display:flex; flex-direction:column; gap:10px; z-index: 50;
-  }
-
-  .bottom-center {
-    position:absolute; bottom:18px; left:0; right:0; display:flex; justify-content:center; gap:18px; z-index:50;
-    pointer-events:auto;
-  }
-
-  button {
-    width:var(--btn-size);
-    height:var(--btn-size);
-    border-radius:50%;
-    border:0;
-    background:var(--btn-bg);
-    color:#fff;
-    font-size:22px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    -webkit-tap-highlight-color: transparent;
-    box-shadow:0 6px 18px rgba(0,0,0,0.45);
-  }
-
-  /* smaller square buttons */
-  .small {
-    width:46px; height:46px; border-radius:12px; font-size:18px;
-  }
-
-  /* filters menu */
-  #filters {
-    position:absolute; right:14px; bottom:100px; background:rgba(0,0,0,0.65); padding:8px; border-radius:10px; display:flex; flex-direction:column; gap:8px; z-index:60;
-  }
+  #filters { position:absolute; right:14px; bottom:100px; flex-direction:column; gap:8px; background:rgba(0,0,0,0.65); padding:8px; border-radius:10px; z-index:60; display:none; }
   #filters button { width:140px; border-radius:10px; font-size:14px; background:rgba(255,95,162,0.12); }
 
-  /* gallery modal */
-  #galleryModal {
-    position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:80; display:none; flex-direction:column; align-items:center; padding:18px; overflow:auto;
-  }
+  #galleryModal { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:80; display:none; flex-direction:column; align-items:center; padding:18px; overflow:auto; }
   #galleryHeader { width:100%; display:flex; justify-content:space-between; align-items:center; color:#fff; margin-bottom:10px; }
   #galleryGrid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
   .thumb { position:relative; width:110px; height:110px; border-radius:12px; overflow:hidden; border:2px solid rgba(255,255,255,0.12); }
   .thumb img, .thumb video { width:100%; height:100%; object-fit:cover; display:block; }
   .thumb button { position:absolute; top:6px; right:6px; background:crimson; border:0; color:#fff; width:26px; height:26px; border-radius:50%; font-size:14px; }
-
-  /* ensure buttons clickable over video */
-  .control-hit { position:relative; z-index:60; pointer-events:auto; }
-
-  /* small responsive adjustments */
-  @media (max-width:420px){
-    :root{ --btn-size:56px; }
-    #filters button{ width:120px; }
-  }
 </style>
 </head>
 <body>
@@ -96,12 +32,12 @@
   <video id="video" autoplay playsinline></video>
   <canvas id="overlay"></canvas>
 
-  <div class="top-right control-hit">
+  <div class="top-right">
     <button id="flipBtn" title="Flip camera">🔄</button>
-    <button id="flashBtn" class="small" title="Flash (mock)">⚡</button>
+    <button id="flashBtn" class="small" title="Flash">⚡</button>
   </div>
 
-  <div id="filters" style="display:none;" class="control-hit">
+  <div id="filters">
     <button data-filter="none">Normal</button>
     <button data-filter="grayscale(1)">Grayscale</button>
     <button data-filter="sepia(1)">Sepia</button>
@@ -109,7 +45,7 @@
     <button data-filter="brightness(1.2)">Bright</button>
   </div>
 
-  <div class="bottom-center control-hit">
+  <div class="bottom-center">
     <button id="filtersBtn" title="Filters">🎨</button>
     <button id="captureBtn" title="Capture">📸</button>
     <button id="recordBtn" title="Record">⏺️</button>
@@ -119,285 +55,138 @@
   <div id="galleryModal">
     <div id="galleryHeader">
       <strong>Gallery</strong>
-      <div>
-        <button id="closeGallery" class="small">✖</button>
-      </div>
+      <button id="closeGallery" class="small">✖</button>
     </div>
     <div id="galleryGrid"></div>
   </div>
 </div>
 
 <script>
-/* --- Fixes implemented:
-   1) Use device selection (deviceId if available) falling back to facingMode.
-   2) Request aspectRatio to match viewport to avoid excessive cropping/zoom.
-   3) Mirror front camera (scaleX) and keep rear camera non-mirrored.
-   4) Ensure controls always on top (CSS) and pointer-events enabled.
-   5) onloadedmetadata sync canvases and overlay.
-*/
-
 const video = document.getElementById('video');
 const overlay = document.getElementById('overlay');
 const overlayCtx = overlay.getContext('2d');
+let useFront = true, mediaRecorder=null, recordedChunks=[], isRecording=false;
+let currentFilter='none';
 
-let useFront = true;
-let currentDeviceId = null;
-let currentFilter = 'none';
-let mediaRecorder = null;
-let recordedChunks = [];
-let isRecording = false;
-
-/* helper: list video input devices */
-async function getVideoInputs(){
-  try{
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    return devices.filter(d => d.kind === 'videoinput');
-  }catch(e){
-    return [];
-  }
+/* Camera setup */
+async function getDeviceId(front){
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const cams = devices.filter(d=>d.kind==='videoinput');
+  if(!cams.length) return null;
+  if(front) return cams[0].deviceId;
+  return cams[cams.length-1].deviceId;
 }
 
-/* choose device id for front/back if possible */
-async function chooseDeviceId(forFront){
-  const inputs = await getVideoInputs();
-  if(!inputs || inputs.length === 0) return null;
-  // Try to find by label keywords (may be empty until permission granted)
-  const backKeywords = ['back','rear','environment','0','wide','ultra'];
-  const frontKeywords = ['front','user','1','face','camera 0','internal'];
-
-  // prefer exact facing: try label contains keywords
-  if(forFront){
-    for(const d of inputs){
-      const lab = (d.label||'').toLowerCase();
-      if(frontKeywords.some(k=>lab.includes(k))) return d.deviceId;
-    }
-    // fallback first device
-    return inputs[0].deviceId;
-  } else {
-    for(const d of inputs){
-      const lab = (d.label||'').toLowerCase();
-      if(backKeywords.some(k=>lab.includes(k))) return d.deviceId;
-    }
-    // fallback last device (often rear)
-    return inputs[inputs.length-1].deviceId;
-  }
-}
-
-/* Start camera with best constraints to minimize zoom/crop */
 async function startCamera(){
-  // stop previous tracks
-  if(video.srcObject){
-    video.srcObject.getTracks().forEach(t=>t.stop());
-    video.srcObject = null;
-  }
-
-  // choose device id if possible
-  let deviceId = null;
-  try { deviceId = await chooseDeviceId(useFront); } catch(e){ deviceId = null; }
-
-  // aspect ratio match viewport to reduce cropping zoom
-  const vw = window.innerWidth || 360;
-  const vh = window.innerHeight || 640;
-  const aspect = vw / vh;
-
-  // build constraints; prefer deviceId if available, otherwise use facingMode
-  const videoConstraints = deviceId ? {
-    deviceId: { exact: deviceId },
-    width: { ideal: vw },
-    height: { ideal: vh },
-    aspectRatio: aspect
-  } : {
-    facingMode: useFront ? 'user' : 'environment',
-    width: { ideal: vw },
-    height: { ideal: vh },
-    aspectRatio: aspect
+  if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+  const vw = window.innerWidth, vh=window.innerHeight;
+  const deviceId = await getDeviceId(useFront);
+  const constraints = {
+    video: deviceId ? { deviceId:{exact:deviceId}, width:{ideal:vw}, height:{ideal:vh}, aspectRatio:vw/vh } :
+                      { facingMode:useFront?'user':'environment', width:{ideal:vw}, height:{ideal:vh}, aspectRatio:vw/vh },
+    audio:false
   };
-
-  const constraints = { video: videoConstraints, audio: false };
-
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
-
-    // set mirror for front camera (Snap-like)
-    if(useFront){
-      video.style.transform = 'scaleX(-1)';
-      overlay.style.transform = 'scaleX(-1)';
-    } else {
-      video.style.transform = 'scaleX(1)';
-      overlay.style.transform = 'scaleX(1)';
-    }
-
-    // after metadata loaded, fix sizes
-    video.onloadedmetadata = () => {
-      // set canvas/overlay sizes to video resolution
-      overlay.width = video.videoWidth || vw;
-      overlay.height = video.videoHeight || vh;
-
-      // Also set CSS object-fit: cover (keeps fill), but since we matched aspect ratio -> less crop
-      video.style.objectFit = 'cover';
-
-      // clear overlay
-      overlayCtx.clearRect(0,0,overlay.width,overlay.height);
-    };
-
-  } catch (err) {
-    console.error('Camera error', err);
-    alert('Camera access failed: ' + (err && err.message ? err.message : err));
+    video.style.transform = useFront ? 'scaleX(-1)' : 'scaleX(1)';
+    overlay.style.transform = video.style.transform;
+    video.onloadedmetadata=()=>{ overlay.width=video.videoWidth; overlay.height=video.videoHeight; };
+  } catch(e){
+    alert('Camera access failed: '+e.message);
   }
 }
 
-/* toggle front/back */
-document.getElementById('flipBtn').addEventListener('click', async () => {
+/* Flip */
+document.getElementById('flipBtn').onclick = async ()=>{
   useFront = !useFront;
   await startCamera();
-});
+};
 
-/* filters */
-document.getElementById('filtersBtn').addEventListener('click', ()=>{
-  const f = document.getElementById('filters');
-  f.style.display = (f.style.display === 'flex' ? 'none' : 'flex');
-});
+/* Filters */
+document.getElementById('filtersBtn').onclick = ()=>{ 
+  const f = document.getElementById('filters'); 
+  f.style.display = (f.style.display==='flex'?'none':'flex'); 
+};
 document.querySelectorAll('#filters button').forEach(b=>{
-  b.addEventListener('click', ()=>{
-    const v = b.getAttribute('data-filter') || 'none';
-    currentFilter = v;
-    video.style.filter = currentFilter;
-    document.getElementById('filters').style.display = 'none';
-  });
+  b.onclick=()=>{ currentFilter=b.getAttribute('data-filter'); video.style.filter=currentFilter; document.getElementById('filters').style.display='none'; };
 });
 
-/* flash mock */
-document.getElementById('flashBtn').addEventListener('click', ()=>{
-  const flashDiv = document.getElementById('flash');
-  flashDiv.style.opacity = '0.9';
-  setTimeout(()=> flashDiv.style.opacity = '0', 120);
-});
-
-/* capture */
+/* Capture */
 const canvas = document.createElement('canvas');
-document.getElementById('captureBtn').addEventListener('click', ()=>{
-  if(!video.videoWidth || !video.videoHeight){
-    return alert('Video not ready yet. Sug daqiiqad yar ka dib isku day.');
-  }
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  // if front camera mirrored visually, flip back before drawing to keep saved image looking like selfie
-  if(useFront) {
-    ctx.save();
-    ctx.scale(-1,1);
-    ctx.filter = currentFilter;
-    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-    ctx.restore();
-  } else {
-    ctx.filter = currentFilter;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  }
+document.getElementById('captureBtn').onclick = ()=>{
+  if(!video.videoWidth||!video.videoHeight) return;
+  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+  const ctx=canvas.getContext('2d');
+  if(useFront){ ctx.save(); ctx.scale(-1,1); ctx.filter=currentFilter; ctx.drawImage(video,-canvas.width,0,canvas.width,canvas.height); ctx.restore(); }
+  else { ctx.filter=currentFilter; ctx.drawImage(video,0,0,canvas.width,canvas.height); }
   const data = canvas.toDataURL('image/png');
-
-  // save to localStorage gallery (keeps as base64). Limit: localStorage size ~5MB; consider IndexedDB for many/large files.
-  const gal = JSON.parse(localStorage.getItem('somlinkGallery') || '[]');
-  gal.push({ id: Date.now(), type:'photo', data });
-  localStorage.setItem('somlinkGallery', JSON.stringify(gal));
+  const gal = JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
+  gal.push({id:Date.now(),type:'photo',data});
+  localStorage.setItem('somlinkGallery',JSON.stringify(gal));
   alert('Sawir la keydiyey gallery-ga!');
-});
+};
 
-/* recording (simple) */
-document.getElementById('recordBtn').addEventListener('click', ()=>{
+/* Recording */
+document.getElementById('recordBtn').onclick = ()=>{
   if(!isRecording) startRecording(); else stopRecording();
-});
+};
 function startRecording(){
-  if(!video.srcObject){ alert('Camera stream not ready'); return; }
-  recordedChunks = [];
-  try {
-    mediaRecorder = new MediaRecorder(video.srcObject, { mimeType: 'video/webm;codecs=vp8' });
-  } catch(e){
-    try { mediaRecorder = new MediaRecorder(video.srcObject); } catch(err){ alert('Recording not supported'); return; }
-  }
-  mediaRecorder.ondataavailable = e => { if(e.data && e.data.size) recordedChunks.push(e.data); };
-  mediaRecorder.onstop = () => {
-    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-    const url = URL.createObjectURL(blob);
-    const gal = JSON.parse(localStorage.getItem('somlinkGallery') || '[]');
-    gal.push({ id: Date.now(), type:'video', data: url });
-    localStorage.setItem('somlinkGallery', JSON.stringify(gal));
+  if(!video.srcObject){ alert('Camera not ready'); return; }
+  recordedChunks=[];
+  try{ mediaRecorder = new MediaRecorder(video.srcObject,{mimeType:'video/webm;codecs=vp8'}); }
+  catch(e){ try{ mediaRecorder=new MediaRecorder(video.srcObject);}catch(err){ alert('Recording not supported'); return; } }
+  mediaRecorder.ondataavailable = e=>{ if(e.data && e.data.size) recordedChunks.push(e.data); };
+  mediaRecorder.onstop=()=>{
+    const blob=new Blob(recordedChunks,{type:'video/webm'});
+    const url=URL.createObjectURL(blob);
+    const gal=JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
+    gal.push({id:Date.now(),type:'video',data:url});
+    localStorage.setItem('somlinkGallery',JSON.stringify(gal));
     alert('Video la keydiyey gallery-ga!');
   };
   mediaRecorder.start();
-  isRecording = true;
-  document.getElementById('recordBtn').textContent = '⏹️';
+  isRecording=true;
+  document.getElementById('recordBtn').textContent='⏹️';
 }
-function stopRecording(){
-  if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-  isRecording = false;
-  document.getElementById('recordBtn').textContent = '⏺️';
-}
+function stopRecording(){ if(mediaRecorder&&mediaRecorder.state!=='inactive') mediaRecorder.stop(); isRecording=false; document.getElementById('recordBtn').textContent='⏺️'; }
 
-/* gallery open/close & render */
-document.getElementById('galleryBtn').addEventListener('click', loadAndOpenGallery);
-document.getElementById('closeGallery').addEventListener('click', ()=> document.getElementById('galleryModal').style.display = 'none');
-
+/* Gallery */
+document.getElementById('galleryBtn').onclick = loadAndOpenGallery;
+document.getElementById('closeGallery').onclick = ()=>{ document.getElementById('galleryModal').style.display='none'; };
 function loadAndOpenGallery(){
-  const grid = document.getElementById('galleryGrid');
-  grid.innerHTML = '';
-  const gal = JSON.parse(localStorage.getItem('somlinkGallery') || '[]');
-  if(!gal.length) {
-    grid.innerHTML = '<p style="color:#ccc">Gallery waa faaran</p>';
-  }
-  gal.slice().reverse().forEach((item, idx) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'thumb';
-    if(item.type === 'photo'){
-      const img = document.createElement('img');
-      img.src = item.data;
-      wrap.appendChild(img);
-    } else {
-      const vid = document.createElement('video');
-      vid.src = item.data;
-      vid.controls = true;
-      wrap.appendChild(vid);
-    }
-    const del = document.createElement('button');
-    del.textContent = '✖';
-    del.onclick = () => {
-      // remove specific item by id
-      const saved = JSON.parse(localStorage.getItem('somlinkGallery') || '[]');
-      const filtered = saved.filter(i => i.id !== item.id);
-      localStorage.setItem('somlinkGallery', JSON.stringify(filtered));
-      loadAndOpenGallery(); // refresh
-    };
-    wrap.appendChild(del);
-    grid.appendChild(wrap);
+  const grid=document.getElementById('galleryGrid'); grid.innerHTML='';
+  const gal=JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
+  if(!gal.length){ grid.innerHTML='<p style="color:#ccc">Gallery waa faaran</p>'; }
+  gal.forEach(item=>{
+    const div=document.createElement('div'); div.className='thumb';
+    if(item.type==='photo'){ const img=document.createElement('img'); img.src=item.data; div.appendChild(img); }
+    else if(item.type==='video'){ const vid=document.createElement('video'); vid.src=item.data; vid.controls=true; div.appendChild(vid); }
+    const delBtn=document.createElement('button'); delBtn.textContent='✖'; delBtn.onclick=()=>{ deleteItem(item.id); };
+    div.appendChild(delBtn);
+    grid.appendChild(div);
   });
-  document.getElementById('galleryModal').style.display = 'flex';
+  document.getElementById('galleryModal').style.display='flex';
+}
+function deleteItem(id){
+  let gal=JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
+  gal=gal.filter(x=>x.id!==id);
+  localStorage.setItem('somlinkGallery',JSON.stringify(gal));
+  loadAndOpenGallery();
 }
 
-/* keep overlay updated (placeholder for future face detection) */
-function animateOverlay(){
-  overlayCtx.clearRect(0,0,overlay.width, overlay.height);
-  // we can draw simple crosshair or nothing; keep size in sync
-  requestAnimationFrame(animateOverlay);
+/* Flash */
+document.getElementById('flashBtn').onclick = ()=>{
+  const flash = document.createElement('div');
+  flash.style.position='fixed';
+  flash.style.top='0'; flash.style.left='0'; flash.style.width='100%'; flash.style.height='100%';
+  flash.style.background='white'; flash.style.opacity='0.8'; flash.style.zIndex='99';
+  document.body.appendChild(flash);
+  setTimeout(()=>{ flash.remove(); },120);
 }
 
-/* sync overlay size on load/resize */
-function resizeCanvases(){
-  overlay.width = video.videoWidth || window.innerWidth;
-  overlay.height = video.videoHeight || window.innerHeight;
-}
-window.addEventListener('resize', ()=> {
-  resizeCanvases();
-});
-video.addEventListener('loadedmetadata', ()=> {
-  resizeCanvases();
-});
-
-/* start up */
-(async () => {
-  await startCamera();
-  animateOverlay();
-})();
-
+/* Start camera on load */
+startCamera();
 </script>
 </body>
-                                              </html>
+        </html>
