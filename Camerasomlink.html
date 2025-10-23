@@ -6,7 +6,7 @@
 <title>Somlink AI Camera</title>
 <style>
 body { margin:0; background:black; color:white; font-family:sans-serif; overflow:hidden; }
-video { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; }
+video { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; pointer-events:none; }
 #overlay, #snapshot { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
 #controls { position:fixed; bottom:20px; width:100%; display:flex; justify-content:center; gap:20px; z-index:999; }
 button { background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; padding:12px; font-size:18px; }
@@ -26,7 +26,7 @@ button { background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%
 </head>
 <body>
 
-<video id="camera" autoplay playsinline></video>
+<video id="camera" autoplay playsinline muted></video>
 <canvas id="snapshot"></canvas>
 <canvas id="overlay"></canvas>
 <div id="flash"></div>
@@ -67,12 +67,21 @@ let currentFilter = 'none';
 let mediaRecorder, recordedChunks = [];
 let isRecording = false;
 
-// Camera init
+// Camera init (duplicate-free, audio-echo-free)
 async function startCamera(){
-  if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
-  const constraints = { video: { facingMode: useFront?'user':'environment', width:{ideal:1280}, height:{ideal:720} }, audio:true };
-  try{ const stream = await navigator.mediaDevices.getUserMedia(constraints); video.srcObject = stream; }
-  catch(e){ alert("Camera error: "+e.message); }
+  // stop previous tracks
+  if(video.srcObject){
+    video.srcObject.getTracks().forEach(track => track.stop());
+  }
+  const constraints = {
+    video:{ facingMode:useFront?'user':'environment', width:{ideal:1280}, height:{ideal:720} },
+    audio:true
+  };
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
+    video.muted = true; // prevent echo
+  }catch(e){ alert("Camera error: "+e.message); }
 }
 startCamera();
 document.getElementById('flipBtn').onclick = ()=>{ useFront=!useFront; startCamera(); };
@@ -107,12 +116,12 @@ function loadGallery(){
     del.onclick=()=>{ photos.splice(i,1); localStorage.setItem('somlinkGallery',JSON.stringify(photos)); loadGallery(); };
     wrap.appendChild(del);
     if(item.type==='photo'){ const img=document.createElement('img'); img.src=item.data; wrap.appendChild(img); }
-    else { const vid=document.createElement('video'); vid.src=item.data; vid.controls=true; wrap.appendChild(vid); }
+    else{ const vid=document.createElement('video'); vid.src=item.data; vid.controls=true; wrap.appendChild(vid); }
     galleryGrid.appendChild(wrap);
   });
 }
 
-// Photo + Long press video capture
+// Photo + long press video capture
 const captureBtn = document.getElementById('captureBtn');
 let longPressTimer;
 
@@ -125,9 +134,7 @@ captureBtn.addEventListener('touchcancel', cancelPress);
 
 function startPress(e){
   e.preventDefault();
-  longPressTimer = setTimeout(()=>{
-    if(!isRecording) startRecord();
-  }, 500);
+  longPressTimer = setTimeout(()=>{ if(!isRecording) startRecord(); }, 500);
 }
 
 function endPress(e){
@@ -173,7 +180,7 @@ function saveVideo(){
   loadGallery();
 }
 
-// Face detection (optimized)
+// Face detection (5fps)
 let faceDetectionInterval;
 async function loadModels(){
   await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
@@ -196,4 +203,4 @@ async function detectFaces(){
 video.onloadedmetadata=()=>loadModels();
 </script>
 </body>
-  </html>
+                               </html>
