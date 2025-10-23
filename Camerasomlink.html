@@ -1,368 +1,176 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Snapchat-style Camera</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: black;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
-      font-family: sans-serif;
-    }
-
-    video {
-      width: 100%;
-      height: auto;
-      border-radius: 12px;
-      object-fit: cover;
-      transition: filter 0.3s ease;
-    }
-
-    #snapshot {
-      display: none;
-    }
-
-    /* Buttons styling */
-    button {
-      background: #ff006e;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 50px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    #bottomControls {
-      position: fixed;
-      bottom: 20px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 20px;
-      z-index: 999;
-    }
-
-    #captureBtn {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      font-size: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #saveBtn {
-      position: absolute;
-      left: 20px;
-      bottom: 20px;
-    }
-
-    #filterToggle {
-      position: absolute;
-      right: 20px;
-      bottom: 20px;
-      z-index: 1000;
-    }
-
-    #filtersMenu {
-      position: absolute;
-      right: 20px;
-      bottom: 70px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      background: rgba(0,0,0,0.8);
-      padding: 10px;
-      border-radius: 10px;
-      opacity: 0;
-      transform: translateY(20px);
-      pointer-events: none;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      z-index: 1000;
-    }
-
-    #filtersMenu.show {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: auto;
-    }
-
-    #filtersMenu button {
-      background: #ff5fa2;
-      border-radius: 8px;
-      font-size: 14px;
-    }
-
-    #flipBtn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-    }
-
-    #flashBtn {
-      position: absolute;
-      top: 70px;
-      right: 20px;
-      z-index: 1000;
-    }
-
-    #flash {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: white;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 9999;
-      transition: opacity 0.2s ease;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Gallery styling */
-    #gallery {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 50vh;
-      overflow-y: auto;
-      z-index: 1000;
-    }
-
-    #gallery img, #gallery video {
-      width: 100px;
-      border-radius: 8px;
-      border: 2px solid white;
-    }
-
-    #recordBtn {
-      background: red;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snapchat-style Camera + AI Beautification</title>
+<style>
+  body { margin:0; padding:0; background:black; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; overflow:hidden; font-family:sans-serif; }
+  video { width:100%; height:auto; border-radius:12px; object-fit:cover; transition:filter 0.3s ease; }
+  #snapshot{ display:none; }
+  button { background:#ff006e; color:white; border:none; padding:12px 20px; border-radius:50px; font-size:16px; cursor:pointer; }
+  #bottomControls { position:fixed; bottom:20px; width:100%; display:flex; justify-content:center; align-items:center; gap:20px; z-index:999; }
+  #captureBtn { width:80px; height:80px; border-radius:50%; font-size:28px; display:flex; align-items:center; justify-content:center; }
+  #saveBtn { position:absolute; left:20px; bottom:20px; }
+  #filterToggle { position:absolute; right:20px; bottom:20px; z-index:1000; }
+  #filtersMenu { position:absolute; right:20px; bottom:70px; display:flex; flex-direction:column; gap:8px; background:rgba(0,0,0,0.8); padding:10px; border-radius:10px; opacity:0; transform:translateY(20px); pointer-events:none; transition:opacity 0.3s ease, transform 0.3s ease; z-index:1000; }
+  #filtersMenu.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+  #filtersMenu button { background:#ff5fa2; border-radius:8px; font-size:14px; }
+  #flipBtn{ position:absolute; top:20px; right:20px; z-index:1000; }
+  #flashBtn{ position:absolute; top:70px; right:20px; z-index:1000; }
+  #flash{ position:fixed; top:0; left:0; width:100%; height:100%; background:white; opacity:0; pointer-events:none; z-index:9999; transition:opacity 0.2s ease; }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+  #gallery{ position:fixed; top:20px; left:20px; display:flex; flex-direction:column; gap:10px; max-height:50vh; overflow-y:auto; z-index:1000; }
+  #gallery img, #gallery video{ width:100px; border-radius:8px; border:2px solid white; }
+  #recordBtn{ background:red; }
+  #overlay{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:500; }
+</style>
 </head>
 <body>
-  <video id="camera" autoplay playsinline></video>
-  <canvas id="snapshot"></canvas>
 
-  <div id="bottomControls">
-    <button id="captureBtn">📸</button>
-    <button id="recordBtn">⏺️</button>
-  </div>
+<video id="camera" autoplay playsinline></video>
+<canvas id="snapshot"></canvas>
+<canvas id="overlay"></canvas>
 
-  <button id="saveBtn" disabled>💾 Save</button>
+<div id="bottomControls">
+  <button id="captureBtn">📸</button>
+  <button id="recordBtn">⏺️</button>
+</div>
 
-  <!-- Filter toggle and menu -->
-  <button id="filterToggle">🎨 Filters</button>
-  <div id="filtersMenu">
-    <button data-filter="none">Normal</button>
-    <button data-filter="grayscale(100%)">Grayscale</button>
-    <button data-filter="sepia(100%)">Sepia</button>
-    <button data-filter="brightness(1.2) contrast(1.1) saturate(1.3)">Bright & Soft</button>
-    <button data-filter="contrast(1.2) saturate(1.1) hue-rotate(200deg)">Cool / Blue</button>
-    <button data-filter="contrast(1.1) saturate(1.2) hue-rotate(30deg)">Warm / Orange</button>
-    <button data-filter="contrast(0.9) brightness(1.1) sepia(0.5)">Vintage / Retro</button>
-  </div>
+<button id="saveBtn" disabled>💾 Save</button>
+<button id="filterToggle">🎨 Filters</button>
+<div id="filtersMenu">
+  <button data-filter="none">Normal</button>
+  <button data-filter="grayscale(100%)">Grayscale</button>
+  <button data-filter="sepia(100%)">Sepia</button>
+  <button data-filter="brightness(1.2) contrast(1.1) saturate(1.3)">Bright & Soft</button>
+  <button data-filter="contrast(1.2) saturate(1.1) hue-rotate(200deg)">Cool / Blue</button>
+  <button data-filter="contrast(1.1) saturate(1.2) hue-rotate(30deg)">Warm / Orange</button>
+  <button data-filter="contrast(0.9) brightness(1.1) sepia(0.5)">Vintage / Retro</button>
+</div>
 
-  <button id="flipBtn">🔄 Flip</button>
-  <button id="flashBtn">⚡ Flash</button>
+<button id="flipBtn">🔄 Flip</button>
+<button id="flashBtn">⚡ Flash</button>
 
-  <div id="flash"></div>
+<div id="gallery"></div>
 
-  <!-- Gallery -->
-  <div id="gallery"></div>
+<script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
 
-  <script>
-    const video = document.getElementById("camera");
-    const canvas = document.getElementById("snapshot");
-    const flash = document.getElementById("flash");
+<script>
+const video = document.getElementById("camera");
+const canvas = document.getElementById("snapshot");
+const overlay = document.getElementById("overlay");
+const overlayCtx = overlay.getContext("2d");
+const flash = document.getElementById("flash");
 
-    let useFrontCamera = true;
-    let currentFilter = 'none';
-    let mediaRecorder, recordedChunks = [];
-    let isRecording = false;
+let useFrontCamera = true;
+let currentFilter = 'none';
+let mediaRecorder, recordedChunks = [];
+let isRecording = false;
 
-    const flipBtn = document.getElementById("flipBtn");
-    const captureBtn = document.getElementById("captureBtn");
-    const saveBtn = document.getElementById("saveBtn");
-    const flashBtn = document.getElementById("flashBtn");
-    const recordBtn = document.getElementById("recordBtn");
+const flipBtn = document.getElementById("flipBtn");
+const captureBtn = document.getElementById("captureBtn");
+const saveBtn = document.getElementById("saveBtn");
+const flashBtn = document.getElementById("flashBtn");
+const recordBtn = document.getElementById("recordBtn");
+const filterToggle = document.getElementById("filterToggle");
+const filtersMenu = document.getElementById("filtersMenu");
+const gallery = document.getElementById("gallery");
 
-    // Filter dropdown
-    const filterToggle = document.getElementById("filterToggle");
-    const filtersMenu = document.getElementById("filtersMenu");
+// Filters
+filterToggle.onclick = () => { filtersMenu.classList.toggle("show"); };
+document.querySelectorAll('#filtersMenu button').forEach(btn=>{
+  btn.onclick = ()=>{
+    currentFilter = btn.getAttribute('data-filter');
+    video.style.filter=currentFilter;
+    filtersMenu.classList.remove("show");
+  }
+});
 
-    filterToggle.onclick = () => {
-      filtersMenu.classList.toggle("show");
-    };
+// Camera
+async function startCamera(){
+  if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+  const constraints={ video:{ facingMode:useFrontCamera?"user":"environment"}, audio:true };
+  try{ const stream=await navigator.mediaDevices.getUserMedia(constraints); video.srcObject=stream; } 
+  catch(err){ alert("Camera access failed: "+err); }
+}
+flipBtn.onclick = ()=>{ useFrontCamera=!useFrontCamera; startCamera(); };
+flashBtn.onclick = ()=>{ flash.style.opacity=0.8; setTimeout(()=>flash.style.opacity=0,100); };
 
-    document.querySelectorAll('#filtersMenu button').forEach(btn => {
-      btn.onclick = () => {
-        currentFilter = btn.getAttribute('data-filter');
-        video.style.filter = currentFilter;
-        filtersMenu.classList.remove("show");
-      };
+// Gallery
+function loadGallery(){
+  gallery.innerHTML="";
+  const photos = JSON.parse(localStorage.getItem("snapPhotos")||"[]");
+  photos.forEach(item=>{
+    if(item.type==="photo"){ const img=document.createElement("img"); img.src=item.data; gallery.appendChild(img);}
+    else if(item.type==="video"){ const vid=document.createElement("video"); vid.src=item.data; vid.controls=true; gallery.appendChild(vid);}
+  });
+}
+
+// Photo capture
+function takePhoto(){
+  flash.style.opacity=0.8; setTimeout(()=>flash.style.opacity=0,100);
+  const ctx=canvas.getContext("2d");
+  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+  ctx.filter=currentFilter; ctx.drawImage(video,0,0);
+  const dataURL=canvas.toDataURL("image/png");
+
+  const link=document.createElement("a"); link.href=dataURL; link.download=`photo_${Date.now()}.png`; link.click();
+  saveBtn.disabled=false;
+
+  let photos=JSON.parse(localStorage.getItem("snapPhotos")||"[]");
+  photos.push({type:"photo", data:dataURL});
+  localStorage.setItem("snapPhotos", JSON.stringify(photos));
+  loadGallery();
+}
+captureBtn.onclick=takePhoto;
+saveBtn.onclick=()=>{ const dataURL=canvas.toDataURL("image/png"); const link=document.createElement("a"); link.href=dataURL; link.download=`photo_${Date.now()}.png`; link.click(); };
+
+// Video
+recordBtn.onclick = ()=>{ if(!isRecording) startRecording(); else stopRecording(); };
+function startRecording(){
+  recordedChunks=[]; 
+  mediaRecorder=new MediaRecorder(video.srcObject,{mimeType:'video/webm; codecs=vp8,opus'});
+  mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop=saveVideo; mediaRecorder.start(); isRecording=true; recordBtn.textContent="⏹️ Stop Recording";
+}
+function stopRecording(){ if(mediaRecorder&&mediaRecorder.state!=="inactive"){ mediaRecorder.stop(); isRecording=false; recordBtn.textContent="⏺️"; } }
+function saveVideo(){
+  const blob=new Blob(recordedChunks,{type:'video/webm'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=`video_${Date.now()}.webm`; a.click();
+  let photos=JSON.parse(localStorage.getItem("snapPhotos")||"[]");
+  photos.push({type:"video", data:url});
+  localStorage.setItem("snapPhotos", JSON.stringify(photos));
+  loadGallery();
+}
+
+// AI beautification
+async function loadModels(){
+  await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+  overlay.width=video.videoWidth; overlay.height=video.videoHeight;
+  detectFaces();
+}
+
+async function detectFaces(){
+  if(video.readyState>=2){
+    const detections = await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions());
+    overlayCtx.clearRect(0,0,overlay.width,overlay.height);
+    detections.forEach(det=>{
+      const {x,y,width,height}=det.box;
+      overlayCtx.strokeStyle='rgba(255,0,150,0.7)';
+      overlayCtx.lineWidth=3;
+      overlayCtx.strokeRect(x,y,width,height);
     });
+  }
+  requestAnimationFrame(detectFaces);
+}
 
-    async function startCamera() {
-      if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
-      }
+// Start
+loadGallery();
+startCamera();
+video.onloadedmetadata=()=>{ overlay.width=video.videoWidth; overlay.height=video.videoHeight; loadModels(); };
 
-      const constraints = {
-        video: { facingMode: useFrontCamera ? "user" : "environment" },
-        audio: true
-      };
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
-      } catch (err) {
-        alert("Camera access failed: " + err);
-      }
-    }
-
-    flipBtn.onclick = () => {
-      useFrontCamera = !useFrontCamera;
-      startCamera();
-    };
-
-    flashBtn.onclick = () => flashEffect();
-
-    function flashEffect() {
-      flash.style.opacity = 0.8;
-      setTimeout(() => { flash.style.opacity = 0; }, 100);
-    }
-
-    // Gallery
-    const gallery = document.getElementById("gallery");
-
-    function loadGallery() {
-      gallery.innerHTML = "";
-      const photos = JSON.parse(localStorage.getItem("snapPhotos") || "[]");
-      photos.forEach(item => {
-        if(item.type === "photo"){
-          const img = document.createElement("img");
-          img.src = item.data;
-          gallery.appendChild(img);
-        } else if(item.type === "video"){
-          const vid = document.createElement("video");
-          vid.src = item.data;
-          vid.controls = true;
-          gallery.appendChild(vid);
-        }
-      });
-    }
-
-    function takePhoto() {
-      flashEffect();
-      const context = canvas.getContext("2d");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.filter = currentFilter;
-      context.drawImage(video, 0, 0);
-
-      const dataURL = canvas.toDataURL("image/png");
-
-      // Auto download
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = `photo_${Date.now()}.png`;
-      link.click();
-
-      saveBtn.disabled = false;
-
-      // Save to localStorage
-      let photos = JSON.parse(localStorage.getItem("snapPhotos") || "[]");
-      photos.push({type:"photo", data:dataURL});
-      localStorage.setItem("snapPhotos", JSON.stringify(photos));
-
-      loadGallery();
-    }
-
-    captureBtn.onclick = takePhoto;
-
-    saveBtn.onclick = () => {
-      const dataURL = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = `photo_${Date.now()}.png`;
-      link.click();
-    };
-
-    // Video recording
-    recordBtn.onclick = () => {
-      if(!isRecording){
-        startRecording();
-      } else {
-        stopRecording();
-      }
-    };
-
-    function startRecording() {
-      recordedChunks = [];
-      mediaRecorder = new MediaRecorder(video.srcObject, { mimeType: 'video/webm; codecs=vp8,opus' });
-      mediaRecorder.ondataavailable = e => {
-        if(e.data.size > 0) recordedChunks.push(e.data);
-      };
-      mediaRecorder.onstop = saveVideo;
-      mediaRecorder.start();
-      isRecording = true;
-      recordBtn.textContent = "⏹️ Stop Recording";
-      console.log("Recording started...");
-    }
-
-    function stopRecording() {
-      if(mediaRecorder && mediaRecorder.state !== "inactive"){
-        mediaRecorder.stop();
-        isRecording = false;
-        recordBtn.textContent = "⏺️";
-        console.log("Recording stopped.");
-      }
-    }
-
-    function saveVideo() {
-      const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob);
-
-      // Auto download
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `video_${Date.now()}.webm`;
-      a.click();
-
-      // Save to localStorage
-      let photos = JSON.parse(localStorage.getItem("snapPhotos") || "[]");
-      photos.push({type:"video", data:url});
-      localStorage.setItem("snapPhotos", JSON.stringify(photos));
-
-      loadGallery();
-    }
-
-    // Load gallery on page load
-    loadGallery();
-
-    // Start camera on load
-    startCamera();
-  </script>
+</script>
 </body>
-      </html>
+    </html>
