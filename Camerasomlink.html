@@ -5,26 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Somlink Camera</title>
 <style>
-  html, body { margin:0; padding:0; height:100%; background:#000; overflow:hidden; font-family:sans-serif; }
-  #app { position:relative; width:100vw; height:100vh; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-  video { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1; background:#000; transform-origin:center center; }
-  #overlay { position:absolute; top:0; left:0; width:100%; height:100%; z-index:2; pointer-events:none; }
+html, body { margin:0; padding:0; height:100%; background:#000; overflow:hidden; font-family:sans-serif; }
+#app { position:relative; width:100vw; height:100vh; overflow:hidden; display:flex; align-items:center; justify-content:center; }
 
-  .top-right { position:absolute; top:16px; right:14px; display:flex; flex-direction:column; gap:10px; z-index:50; }
-  .bottom-center { position:absolute; bottom:18px; left:0; right:0; display:flex; justify-content:center; gap:18px; z-index:50; pointer-events:auto; }
+video {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  object-fit:cover; /* Buuxin shaashadda */
+  z-index:1; background:#000; transform-origin:center center;
+}
+#overlay { position:absolute; top:0; left:0; width:100%; height:100%; z-index:2; pointer-events:none; }
 
-  button { width:62px; height:62px; border-radius:50%; border:none; background:rgba(255,6,110,0.18); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.45); -webkit-tap-highlight-color:transparent; }
-  button.small { width:46px; height:46px; font-size:18px; border-radius:12px; }
+.top-right { position:absolute; top:16px; right:14px; display:flex; flex-direction:column; gap:10px; z-index:999; }
+.bottom-center { position:absolute; bottom:18px; left:0; right:0; display:flex; justify-content:center; gap:18px; z-index:999; }
 
-  #filters { position:absolute; right:14px; bottom:100px; flex-direction:column; gap:8px; background:rgba(0,0,0,0.65); padding:8px; border-radius:10px; z-index:60; display:none; }
-  #filters button { width:140px; border-radius:10px; font-size:14px; background:rgba(255,95,162,0.12); }
+button {
+  width:62px; height:62px; border-radius:50%; border:none; background:rgba(255,6,110,0.18);
+  color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.45); -webkit-tap-highlight-color:transparent;
+}
+button.small { width:46px; height:46px; font-size:18px; border-radius:12px; }
 
-  #galleryModal { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:80; display:none; flex-direction:column; align-items:center; padding:18px; overflow:auto; }
-  #galleryHeader { width:100%; display:flex; justify-content:space-between; align-items:center; color:#fff; margin-bottom:10px; }
-  #galleryGrid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
-  .thumb { position:relative; width:110px; height:110px; border-radius:12px; overflow:hidden; border:2px solid rgba(255,255,255,0.12); }
-  .thumb img, .thumb video { width:100%; height:100%; object-fit:cover; display:block; }
-  .thumb button { position:absolute; top:6px; right:6px; background:crimson; border:0; color:#fff; width:26px; height:26px; border-radius:50%; font-size:14px; }
+#filters { position:absolute; right:14px; bottom:100px; flex-direction:column; gap:8px; background:rgba(0,0,0,0.65); padding:8px; border-radius:10px; z-index:1000; display:none; }
+#filters button { width:140px; border-radius:10px; font-size:14px; background:rgba(255,95,162,0.12); }
+
+#galleryModal { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:1000; display:none; flex-direction:column; align-items:center; padding:18px; overflow:auto; }
+#galleryHeader { width:100%; display:flex; justify-content:space-between; align-items:center; color:#fff; margin-bottom:10px; }
+#galleryGrid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+.thumb { position:relative; width:110px; height:110px; border-radius:12px; overflow:hidden; border:2px solid rgba(255,255,255,0.12); }
+.thumb img, .thumb video { width:100%; height:100%; object-fit:cover; display:block; }
+.thumb button { position:absolute; top:6px; right:6px; background:crimson; border:0; color:#fff; width:26px; height:26px; border-radius:50%; font-size:14px; }
 </style>
 </head>
 <body>
@@ -76,7 +84,6 @@ async function getDeviceId(front){
   if(front) return cams[0].deviceId;
   return cams[cams.length-1].deviceId;
 }
-
 async function startCamera(){
   if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
   const vw = window.innerWidth, vh=window.innerHeight;
@@ -92,16 +99,11 @@ async function startCamera(){
     video.style.transform = useFront ? 'scaleX(-1)' : 'scaleX(1)';
     overlay.style.transform = video.style.transform;
     video.onloadedmetadata=()=>{ overlay.width=video.videoWidth; overlay.height=video.videoHeight; };
-  } catch(e){
-    alert('Camera access failed: '+e.message);
-  }
+  } catch(e){ alert('Camera access failed: '+e.message); }
 }
 
 /* Flip */
-document.getElementById('flipBtn').onclick = async ()=>{
-  useFront = !useFront;
-  await startCamera();
-};
+document.getElementById('flipBtn').onclick = async ()=>{ useFront = !useFront; await startCamera(); };
 
 /* Filters */
 document.getElementById('filtersBtn').onclick = ()=>{ 
@@ -180,7 +182,7 @@ document.getElementById('flashBtn').onclick = ()=>{
   const flash = document.createElement('div');
   flash.style.position='fixed';
   flash.style.top='0'; flash.style.left='0'; flash.style.width='100%'; flash.style.height='100%';
-  flash.style.background='white'; flash.style.opacity='0.8'; flash.style.zIndex='99';
+  flash.style.background='white'; flash.style.opacity='0.8'; flash.style.zIndex='9999';
   document.body.appendChild(flash);
   setTimeout(()=>{ flash.remove(); },120);
 }
@@ -189,4 +191,4 @@ document.getElementById('flashBtn').onclick = ()=>{
 startCamera();
 </script>
 </body>
-        </html>
+  </html>
