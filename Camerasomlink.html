@@ -15,6 +15,7 @@
       justify-content: center;
       height: 100vh;
       overflow: hidden;
+      font-family: sans-serif;
     }
 
     video {
@@ -22,6 +23,7 @@
       height: auto;
       border-radius: 12px;
       object-fit: cover;
+      transition: filter 0.3s ease;
     }
 
     #snapshot {
@@ -39,7 +41,6 @@
       cursor: pointer;
     }
 
-    /* Bottom controls */
     #bottomControls {
       position: fixed;
       bottom: 20px;
@@ -56,7 +57,6 @@
       height: 80px;
       border-radius: 50%;
       font-size: 28px;
-      background: #ff006e;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -68,40 +68,54 @@
       bottom: 20px;
     }
 
+    #filterToggle {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1000;
+    }
+
     #filtersMenu {
-  position: absolute;
-  right: 20px;
-  bottom: 70px;
-  display: none;
-  flex-direction: column;
-  gap: 8px;
-  background: rgba(0,0,0,0.8);
-  padding: 10px;
-  border-radius: 10px;
-}
+      position: absolute;
+      right: 20px;
+      bottom: 70px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: rgba(0,0,0,0.8);
+      padding: 10px;
+      border-radius: 10px;
+      opacity: 0;
+      transform: translateY(20px);
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 1000;
+    }
 
-#filtersMenu button {
-  background: #ff5fa2;
-  border-radius: 8px;
-  font-size: 14px;
-}
+    #filtersMenu.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
 
-#filterToggle {
-  position: absolute;
-  right: 20px;
-  bottom: 20px;
-}
-    
+    #filtersMenu button {
+      background: #ff5fa2;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
     #flipBtn {
       position: absolute;
       top: 20px;
       right: 20px;
+      z-index: 1000;
     }
 
     #flashBtn {
       position: absolute;
       top: 70px;
       right: 20px;
+      z-index: 1000;
     }
 
     #flash {
@@ -116,35 +130,66 @@
       z-index: 9999;
       transition: opacity 0.2s ease;
     }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Gallery styling */
+    #gallery {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 50vh;
+      overflow-y: auto;
+      z-index: 1000;
+    }
+
+    #gallery img, #gallery video {
+      width: 100px;
+      border-radius: 8px;
+      border: 2px solid white;
+    }
+
+    #recordBtn {
+      background: red;
+    }
   </style>
 </head>
-
 <body>
   <video id="camera" autoplay playsinline></video>
   <canvas id="snapshot"></canvas>
 
   <div id="bottomControls">
     <button id="captureBtn">📸</button>
+    <button id="recordBtn">⏺️</button>
   </div>
 
-  <button id="saveBtn">💾 Save</button>
-  
-<!-- Filter toggle and menu -->
-<button id="filterToggle">🎨 Filters</button>
-<div id="filtersMenu">
-  <button data-filter="none">Normal</button>
-  <button data-filter="grayscale(100%)">Grayscale</button>
-  <button data-filter="sepia(100%)">Sepia</button>
-  <button data-filter="brightness(1.2) contrast(1.1) saturate(1.3)">Bright & Soft</button>
-  <button data-filter="contrast(1.2) saturate(1.1) hue-rotate(200deg)">Cool / Blue</button>
-  <button data-filter="contrast(1.1) saturate(1.2) hue-rotate(30deg)">Warm / Orange</button>
-  <button data-filter="contrast(0.9) brightness(1.1) sepia(0.5)">Vintage / Retro</button>
-</div>
+  <button id="saveBtn" disabled>💾 Save</button>
+
+  <!-- Filter toggle and menu -->
+  <button id="filterToggle">🎨 Filters</button>
+  <div id="filtersMenu">
+    <button data-filter="none">Normal</button>
+    <button data-filter="grayscale(100%)">Grayscale</button>
+    <button data-filter="sepia(100%)">Sepia</button>
+    <button data-filter="brightness(1.2) contrast(1.1) saturate(1.3)">Bright & Soft</button>
+    <button data-filter="contrast(1.2) saturate(1.1) hue-rotate(200deg)">Cool / Blue</button>
+    <button data-filter="contrast(1.1) saturate(1.2) hue-rotate(30deg)">Warm / Orange</button>
+    <button data-filter="contrast(0.9) brightness(1.1) sepia(0.5)">Vintage / Retro</button>
+  </div>
 
   <button id="flipBtn">🔄 Flip</button>
   <button id="flashBtn">⚡ Flash</button>
 
   <div id="flash"></div>
+
+  <!-- Gallery -->
+  <div id="gallery"></div>
 
   <script>
     const video = document.getElementById("camera");
@@ -153,27 +198,30 @@
 
     let useFrontCamera = true;
     let currentFilter = 'none';
+    let mediaRecorder, recordedChunks = [];
+    let isRecording = false;
 
     const flipBtn = document.getElementById("flipBtn");
     const captureBtn = document.getElementById("captureBtn");
     const saveBtn = document.getElementById("saveBtn");
     const flashBtn = document.getElementById("flashBtn");
+    const recordBtn = document.getElementById("recordBtn");
 
     // Filter dropdown
-const filterToggle = document.getElementById("filterToggle");
-const filtersMenu = document.getElementById("filtersMenu");
+    const filterToggle = document.getElementById("filterToggle");
+    const filtersMenu = document.getElementById("filtersMenu");
 
-filterToggle.onclick = () => {
-  filtersMenu.style.display = filtersMenu.style.display === "flex" ? "none" : "flex";
-};
+    filterToggle.onclick = () => {
+      filtersMenu.classList.toggle("show");
+    };
 
-document.querySelectorAll('#filtersMenu button').forEach(btn => {
-  btn.onclick = () => {
-    currentFilter = btn.getAttribute('data-filter');
-    video.style.filter = currentFilter;
-    filtersMenu.style.display = "none";
-  };
-});
+    document.querySelectorAll('#filtersMenu button').forEach(btn => {
+      btn.onclick = () => {
+        currentFilter = btn.getAttribute('data-filter');
+        video.style.filter = currentFilter;
+        filtersMenu.classList.remove("show");
+      };
+    });
 
     async function startCamera() {
       if (video.srcObject) {
@@ -181,7 +229,8 @@ document.querySelectorAll('#filtersMenu button').forEach(btn => {
       }
 
       const constraints = {
-        video: { facingMode: useFrontCamera ? "user" : "environment" }
+        video: { facingMode: useFrontCamera ? "user" : "environment" },
+        audio: true
       };
 
       try {
@@ -204,6 +253,26 @@ document.querySelectorAll('#filtersMenu button').forEach(btn => {
       setTimeout(() => { flash.style.opacity = 0; }, 100);
     }
 
+    // Gallery
+    const gallery = document.getElementById("gallery");
+
+    function loadGallery() {
+      gallery.innerHTML = "";
+      const photos = JSON.parse(localStorage.getItem("snapPhotos") || "[]");
+      photos.forEach(item => {
+        if(item.type === "photo"){
+          const img = document.createElement("img");
+          img.src = item.data;
+          gallery.appendChild(img);
+        } else if(item.type === "video"){
+          const vid = document.createElement("video");
+          vid.src = item.data;
+          vid.controls = true;
+          gallery.appendChild(vid);
+        }
+      });
+    }
+
     function takePhoto() {
       flashEffect();
       const context = canvas.getContext("2d");
@@ -212,24 +281,88 @@ document.querySelectorAll('#filtersMenu button').forEach(btn => {
       context.filter = currentFilter;
       context.drawImage(video, 0, 0);
 
-      // Automatic download
+      const dataURL = canvas.toDataURL("image/png");
+
+      // Auto download
       const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataURL;
       link.download = `photo_${Date.now()}.png`;
       link.click();
+
+      saveBtn.disabled = false;
+
+      // Save to localStorage
+      let photos = JSON.parse(localStorage.getItem("snapPhotos") || "[]");
+      photos.push({type:"photo", data:dataURL});
+      localStorage.setItem("snapPhotos", JSON.stringify(photos));
+
+      loadGallery();
     }
 
     captureBtn.onclick = takePhoto;
 
     saveBtn.onclick = () => {
+      const dataURL = canvas.toDataURL("image/png");
       const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataURL;
       link.download = `photo_${Date.now()}.png`;
       link.click();
     };
+
+    // Video recording
+    recordBtn.onclick = () => {
+      if(!isRecording){
+        startRecording();
+      } else {
+        stopRecording();
+      }
+    };
+
+    function startRecording() {
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(video.srcObject, { mimeType: 'video/webm; codecs=vp8,opus' });
+      mediaRecorder.ondataavailable = e => {
+        if(e.data.size > 0) recordedChunks.push(e.data);
+      };
+      mediaRecorder.onstop = saveVideo;
+      mediaRecorder.start();
+      isRecording = true;
+      recordBtn.textContent = "⏹️ Stop Recording";
+      console.log("Recording started...");
+    }
+
+    function stopRecording() {
+      if(mediaRecorder && mediaRecorder.state !== "inactive"){
+        mediaRecorder.stop();
+        isRecording = false;
+        recordBtn.textContent = "⏺️";
+        console.log("Recording stopped.");
+      }
+    }
+
+    function saveVideo() {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+
+      // Auto download
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `video_${Date.now()}.webm`;
+      a.click();
+
+      // Save to localStorage
+      let photos = JSON.parse(localStorage.getItem("snapPhotos") || "[]");
+      photos.push({type:"video", data:url});
+      localStorage.setItem("snapPhotos", JSON.stringify(photos));
+
+      loadGallery();
+    }
+
+    // Load gallery on page load
+    loadGallery();
 
     // Start camera on load
     startCamera();
   </script>
 </body>
-</html>
+      </html>
