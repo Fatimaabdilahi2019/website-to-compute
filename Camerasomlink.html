@@ -10,13 +10,12 @@
   video {
     width:100%;
     height:100%;
-    object-fit:contain; /* sida hadda */
+    object-fit:contain;
     position:absolute;
     top:0;
     left:0;
     z-index:1;
     pointer-events:none;
-    border-radius:0; /* □ rectangle */
     background:black;
   }
 
@@ -85,7 +84,6 @@
   #galleryGrid div { position:relative; }
   #galleryGrid img, #galleryGrid video { width:110px; height:110px; object-fit:cover; border-radius:10px; border:2px solid white; }
 
-  /* Preview with buttons */
   .preview {
     position: fixed;
     inset: 0;
@@ -147,6 +145,7 @@
 </div>
 
 <div id="galleryPanel">
+  <button id="closeGallery" class="back">🔙 Back</button>
   <h2>📷 My Gallery</h2>
   <div id="galleryGrid"></div>
 </div>
@@ -171,6 +170,8 @@ async function startCamera(){
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
+    // Rear camera rectangle
+    if(!useFront){ video.style.borderRadius='0'; }
   } catch(e) { alert("Camera error: " + e.message); }
 }
 startCamera();
@@ -195,6 +196,7 @@ function flashEffect(){ flash.style.opacity=0.8; setTimeout(()=>flash.style.opac
 const galleryPanel=document.getElementById('galleryPanel');
 const galleryGrid=document.getElementById('galleryGrid');
 document.getElementById('galleryBtn').onclick=()=>{ loadGallery(); galleryPanel.classList.add('show'); };
+document.getElementById('closeGallery').onclick = () => { galleryPanel.classList.remove('show'); };
 
 function loadGallery(){
   galleryGrid.innerHTML='';
@@ -275,7 +277,7 @@ function stopRecord(){
   mediaRecorder.stop();
   isRecording=false;
   document.getElementById('recordBtn').textContent='🎥';
-  startCamera(); // dib ugu laabo camera aamusan
+  startCamera();
 }
 function saveVideo(){
   const blob=new Blob(recordedChunks,{type:'video/webm'});
@@ -286,8 +288,6 @@ function saveVideo(){
   alert('🎞️ Video saved to gallery!');
   loadGallery();
 }
-
-// AI Face Detection (optional)
 </script>
 </body>
-</html>
+  </html>
