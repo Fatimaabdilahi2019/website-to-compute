@@ -11,15 +11,21 @@
   video {
     width:100%;
     height:100%;
-    object-fit:cover;
+    object-fit:contain;    /* ✅ Muujin gebi ahaan video-ga */
+    background:black;       /* ✅ Meelaha aan muuqan madow */
     position:absolute;
     top:0;
     left:0;
-    z-index:1;          /* camera hoos dhig */
-    pointer-events:none; /* ha xannibin taabashada */
+    z-index:1;
+    pointer-events:none;
   }
 
-  canvas#overlay, canvas#snapshot { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+  canvas#overlay, canvas#snapshot {
+    position:absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    pointer-events:none;
+  }
 
   #flash { position:fixed; top:0; left:0; width:100%; height:100%; background:white; opacity:0; z-index:1500; transition:opacity 0.2s ease; }
 
@@ -31,8 +37,8 @@
     display:flex;
     justify-content:center;
     gap:20px;
-    pointer-events:auto; /* buttons waa la taaban karaa */
-    z-index:9999;         /* kor mari camera */
+    pointer-events:auto;
+    z-index:9999;
   }
   button {
     background:rgba(0,0,0,0.6);
@@ -55,8 +61,8 @@
     background:rgba(0,0,0,0.8);
     padding:10px;
     border-radius:10px;
-    pointer-events:auto; /* waa la taaban karaa */
-    z-index:9999;         /* kor mari camera */
+    pointer-events:auto;
+    z-index:9999;
   }
   #filtersMenu.show { display:flex; animation:fadeIn .3s ease; }
   @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
@@ -73,8 +79,8 @@
     flex-direction:column;
     align-items:center;
     overflow-y:auto;
-    pointer-events:auto; /* waa la taaban karaa */
-    z-index:9999;        /* kor mari camera */
+    pointer-events:auto;
+    z-index:9999;
   }
   #galleryPanel.show { display:flex; }
   #galleryPanel h2 { margin:10px; }
@@ -300,4 +306,4 @@ async function detectFaces(){
 video.onloadedmetadata=()=>loadModels();
 </script>
 </body>
-    </html>
+                            </html>
