@@ -10,13 +10,14 @@
   video {
     width:100%;
     height:100%;
-    object-fit:contain;
-    background:black;
+    object-fit:contain; /* sida hadda */
     position:absolute;
     top:0;
     left:0;
     z-index:1;
     pointer-events:none;
+    border-radius:0; /* □ rectangle */
+    background:black;
   }
 
   canvas#overlay, canvas#snapshot {
@@ -83,10 +84,8 @@
   #galleryGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
   #galleryGrid div { position:relative; }
   #galleryGrid img, #galleryGrid video { width:110px; height:110px; object-fit:cover; border-radius:10px; border:2px solid white; }
-  .deleteBtn { position:absolute; top:5px; right:5px; background:rgba(255,0,0,0.9); border:none; border-radius:8px; color:white; font-size:13px; padding:4px 8px; cursor:pointer; }
-  .deleteBtn:hover { background:red; }
-  #closeGallery { position:fixed; top:10px; right:10px; background:#ff0077; border-radius:50%; padding:10px; font-size:18px; }
 
+  /* Preview with buttons */
   .preview {
     position: fixed;
     inset: 0;
@@ -101,24 +100,26 @@
     background: #000;
     border-radius: 16px;
     overflow: hidden;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
   }
-  .preview img {
+  .preview img, .preview video {
     max-width: 90vw;
     max-height: 80vh;
     display: block;
   }
-  .preview .download, .preview .close-preview {
-    position: absolute;
-    top: 10px;
-    background: white;
-    color: black;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 16px;
+  .preview button, .preview a {
+    margin:8px 4px;
+    padding:8px 16px;
+    font-size:16px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
   }
-  .preview .download { right: 70px; }
-  .preview .close-preview { right: 10px; }
+  .download { background:white; color:black; }
+  .delete { background:red; color:white; }
+  .back { background:#555; color:white; }
 </style>
 </head>
 <body>
@@ -146,12 +147,9 @@
 </div>
 
 <div id="galleryPanel">
-  <button id="closeGallery">✖</button>
   <h2>📷 My Gallery</h2>
   <div id="galleryGrid"></div>
 </div>
-
-<script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
 
 <script>
 const video = document.getElementById('camera');
@@ -161,12 +159,12 @@ const ctx = canvas.getContext('2d');
 const overlayCtx = overlay.getContext('2d');
 const flash = document.getElementById('flash');
 
-let useFront = false; // ✅ hadda camera danbe waa default
+let useFront = false; // rear camera default
 let currentFilter = 'none';
 let mediaRecorder, recordedChunks = [];
 let isRecording = false;
 
-// ✅ Camera init (audio off marka hore)
+// Start camera
 async function startCamera(){
   if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
   const constraints = { video: { facingMode: useFront ? 'user' : 'environment' }, audio: false };
@@ -197,28 +195,18 @@ function flashEffect(){ flash.style.opacity=0.8; setTimeout(()=>flash.style.opac
 const galleryPanel=document.getElementById('galleryPanel');
 const galleryGrid=document.getElementById('galleryGrid');
 document.getElementById('galleryBtn').onclick=()=>{ loadGallery(); galleryPanel.classList.add('show'); };
-document.getElementById('closeGallery').onclick=()=>galleryPanel.classList.remove('show');
 
 function loadGallery(){
   galleryGrid.innerHTML='';
   const photos = JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
   photos.forEach((item,i)=>{
     const wrap=document.createElement('div');
-    const del=document.createElement('button');
-    del.textContent='🗑️ Delete';
-    del.className='deleteBtn';
-    del.onclick=()=>{
-      if(confirm('Ma hubtaa inaad tirayso sawirkan/muuqaalkan?')){
-        photos.splice(i,1);
-        localStorage.setItem('somlinkGallery',JSON.stringify(photos));
-        loadGallery();
-      }
-    };
-    wrap.appendChild(del);
     if(item.type==='photo'){
       const img=document.createElement('img'); img.src=item.data; wrap.appendChild(img);
+      img.onclick=()=>showPreview(item.data,i,item.type);
     }else{
-      const vid=document.createElement('video'); vid.src=item.data; vid.controls=true; wrap.appendChild(vid);
+      const vid=document.createElement('video'); vid.src=item.data; vid.controls=false; wrap.appendChild(vid);
+      vid.onclick=()=>showPreview(item.data,i,item.type);
     }
     galleryGrid.appendChild(wrap);
   });
@@ -234,30 +222,41 @@ document.getElementById('captureBtn').onclick=()=>{
   let gal=JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
   gal.push({type:'photo',data:dataURL});
   localStorage.setItem('somlinkGallery',JSON.stringify(gal));
-  showPreview(dataURL);
+  loadGallery();
 };
 
-// Preview + Download
-function showPreview(imageData){
+// Preview + Download + Delete + Back
+function showPreview(data,i,type){
   const preview=document.createElement('div');
   preview.className='preview';
   preview.innerHTML=`
     <div class="preview-content">
-      <img src="${imageData}">
-      <a href="${imageData}" download="Somlink_${Date.now()}.png" class="download">⬇️ Download</a>
-      <button class="close-preview">❌</button>
+      ${type==='photo'? `<img src="${data}">` : `<video src="${data}" autoplay controls></video>`}
+      <div>
+        <a href="${data}" download="Somlink_${Date.now()}" class="download">⬇️ Download</a>
+        <button class="delete">🗑️ Delete</button>
+        <button class="back">🔙 Back</button>
+      </div>
     </div>
   `;
   document.body.appendChild(preview);
-  preview.querySelector('.close-preview').onclick=()=>preview.remove();
+  preview.querySelector('.delete').onclick=()=>{
+    if(confirm('Ma hubtaa inaad tirtirayso sawirkan/muuqaalkan?')){
+      let gal=JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
+      gal.splice(i,1);
+      localStorage.setItem('somlinkGallery',JSON.stringify(gal));
+      preview.remove();
+      loadGallery();
+    }
+  };
+  preview.querySelector('.back').onclick=()=>preview.remove();
 }
 
-// ✅ Video Record
+// Video Record
 document.getElementById('recordBtn').onclick=()=>{
   if(!isRecording) startRecord(); else stopRecord();
 };
 async function startRecord(){
-  // Stop old stream
   if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
   const constraints = { video: { facingMode: useFront ? 'user' : 'environment' }, audio: true };
   const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -276,7 +275,7 @@ function stopRecord(){
   mediaRecorder.stop();
   isRecording=false;
   document.getElementById('recordBtn').textContent='🎥';
-  startCamera(); // ✅ dib ugu laabo camera aamusan
+  startCamera(); // dib ugu laabo camera aamusan
 }
 function saveVideo(){
   const blob=new Blob(recordedChunks,{type:'video/webm'});
@@ -288,27 +287,7 @@ function saveVideo(){
   loadGallery();
 }
 
-// AI Face Detection
-async function loadModels(){
-  await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-  detectFaces();
-}
-async function detectFaces(){
-  if(video.readyState>=2){
-    overlay.width=video.videoWidth;
-    overlay.height=video.videoHeight;
-    const detections=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions());
-    overlayCtx.clearRect(0,0,overlay.width,overlay.height);
-    detections.forEach(det=>{
-      const {x,y,width,height}=det.box;
-      overlayCtx.strokeStyle='rgba(255,0,150,0.8)';
-      overlayCtx.lineWidth=2;
-      overlayCtx.strokeRect(x,y,width,height);
-    });
-  }
-  requestAnimationFrame(detectFaces);
-}
-video.onloadedmetadata=()=>loadModels();
+// AI Face Detection (optional)
 </script>
 </body>
 </html>
