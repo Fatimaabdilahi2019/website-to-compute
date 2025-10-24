@@ -3,200 +3,301 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Somlink Camera</title>
+<title>Somlink AI Camera</title>
 <style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    background: black;
+  body { margin:0; background:black; color:white; font-family:sans-serif; overflow:hidden; }
+
+  /* Camera video */
+  video {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    position:absolute;
+    top:0;
+    left:0;
+    z-index:1;          /* camera hoos dhig */
+    pointer-events:none; /* ha xannibin taabashada */
   }
 
-  video#camera {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 1;
-  }
+  canvas#overlay, canvas#snapshot { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
 
-  .controls {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 20px;
-    z-index: 5; /* ✅ kor u qaaday si la taaban karo */
-  }
+  #flash { position:fixed; top:0; left:0; width:100%; height:100%; background:white; opacity:0; z-index:1500; transition:opacity 0.2s ease; }
 
+  /* Control buttons */
+  #controls {
+    position:fixed;
+    bottom:20px;
+    width:100%;
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    pointer-events:auto; /* buttons waa la taaban karaa */
+    z-index:9999;         /* kor mari camera */
+  }
   button {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    padding: 10px 15px;
-    border-radius: 12px;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    backdrop-filter: blur(5px);
+    background:rgba(0,0,0,0.6);
+    color:white;
+    border:none;
+    border-radius:50%;
+    padding:12px;
+    font-size:18px;
+    cursor:pointer;
   }
 
-  button:hover {
-    background: rgba(255, 255, 255, 0.4);
+  /* Filters menu */
+  #filtersMenu {
+    position:fixed;
+    right:20px;
+    bottom:100px;
+    display:none;
+    flex-direction:column;
+    gap:8px;
+    background:rgba(0,0,0,0.8);
+    padding:10px;
+    border-radius:10px;
+    pointer-events:auto; /* waa la taaban karaa */
+    z-index:9999;         /* kor mari camera */
   }
+  #filtersMenu.show { display:flex; animation:fadeIn .3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
 
+  /* Gallery panel */
   #galleryPanel {
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.95);
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    overflow-y:auto;
+    pointer-events:auto; /* waa la taaban karaa */
+    z-index:9999;        /* kor mari camera */
+  }
+  #galleryPanel.show { display:flex; }
+  #galleryPanel h2 { margin:10px; }
+  #galleryGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  #galleryGrid div { position:relative; }
+  #galleryGrid img, #galleryGrid video { width:110px; height:110px; object-fit:cover; border-radius:10px; border:2px solid white; }
+  .deleteBtn { position:absolute; top:5px; right:5px; background:rgba(255,0,0,0.9); border:none; border-radius:8px; color:white; font-size:13px; padding:4px 8px; cursor:pointer; }
+  .deleteBtn:hover { background:red; }
+  #closeGallery { position:fixed; top:10px; right:10px; background:#ff0077; border-radius:50%; padding:10px; font-size:18px; }
+
+  /* Preview popup */
+  .preview {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    display: none;
-    flex-direction: column;
-    z-index: 10;
-    color: white;
-    padding: 10px;
-    overflow-y: auto;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
   }
-
-  #galleryGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
-  }
-
-  #galleryGrid div {
+  .preview-content {
     position: relative;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
   }
-
-  #galleryGrid img,
-  #galleryGrid video {
-    width: 100%;
-    border-radius: 8px;
+  .preview img {
+    max-width: 90vw;
+    max-height: 80vh;
+    display: block;
   }
-
-  .deleteBtn {
+  .preview .download, .preview .close-preview {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    background: rgba(255, 0, 0, 0.9);
+    top: 10px;
+    background: white;
+    color: black;
     border: none;
+    padding: 6px 12px;
     border-radius: 8px;
-    color: white;
-    font-size: 13px;
-    padding: 4px 8px;
-    cursor: pointer;
-    z-index: 20;
+    font-size: 16px;
   }
-
-  .deleteBtn:hover {
-    background: red;
-  }
-
-  .downloadBtn {
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
-    background: rgba(0, 0, 0, 0.7);
-    border: none;
-    border-radius: 6px;
-    color: white;
-    font-size: 12px;
-    padding: 3px 6px;
-    cursor: pointer;
-  }
-
-  .downloadBtn:hover {
-    background: black;
-  }
-
+  .preview .download { right: 70px; }
+  .preview .close-preview { right: 10px; }
 </style>
 </head>
 <body>
 
 <video id="camera" autoplay playsinline></video>
+<canvas id="snapshot"></canvas>
+<canvas id="overlay"></canvas>
+<div id="flash"></div>
 
-<div class="controls">
-  <button id="captureBtn">📸 Capture</button>
-  <button id="galleryBtn">🖼️ Gallery</button>
+<div id="controls">
+  <button id="flipBtn">🔄</button>
+  <button id="filterBtn">🎨</button>
+  <button id="captureBtn">📸</button>
+  <button id="recordBtn">🎥</button>
+  <button id="galleryBtn">🖼️</button>
+</div>
+
+<div id="filtersMenu">
+  <button data-filter="none">Normal</button>
+  <button data-filter="grayscale(1)">Grayscale</button>
+  <button data-filter="sepia(1)">Sepia</button>
+  <button data-filter="brightness(1.4) contrast(1.2)">Bright</button>
+  <button data-filter="contrast(1.3) saturate(1.3)">Vivid</button>
+  <button data-filter="blur(2px)">Soft</button>
 </div>
 
 <div id="galleryPanel">
-  <button onclick="closeGallery()">⬅️ Back</button>
+  <button id="closeGallery">✖</button>
+  <h2>📷 My Gallery</h2>
   <div id="galleryGrid"></div>
 </div>
 
+<script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+
 <script>
 const video = document.getElementById('camera');
-const captureBtn = document.getElementById('captureBtn');
-const galleryBtn = document.getElementById('galleryBtn');
-const galleryPanel = document.getElementById('galleryPanel');
-const galleryGrid = document.getElementById('galleryGrid');
+const canvas = document.getElementById('snapshot');
+const overlay = document.getElementById('overlay');
+const ctx = canvas.getContext('2d');
+const overlayCtx = overlay.getContext('2d');
+const flash = document.getElementById('flash');
+let useFront = true;
+let currentFilter = 'none';
+let mediaRecorder, recordedChunks = [];
+let isRecording = false;
 
-// ✅ camera run
-navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-  .then(stream => video.srcObject = stream)
-  .catch(err => alert('Camera Error: ' + err));
-
-captureBtn.onclick = () => {
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL('image/png');
-
-  const photos = JSON.parse(localStorage.getItem('somlinkGallery') || '[]');
-  photos.push({ type: 'photo', data: dataUrl });
-  localStorage.setItem('somlinkGallery', JSON.stringify(photos));
-  alert('✅ Sawirka waa la qabtay oo waa la kaydiyay!');
-};
-
-galleryBtn.onclick = () => {
-  galleryPanel.style.display = 'flex';
-  loadGallery();
-};
-
-function closeGallery() {
-  galleryPanel.style.display = 'none';
+// Camera init
+async function startCamera(){
+  if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+  const constraints = { video: { facingMode: useFront ? 'user' : 'environment' }, audio: true };
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
+  } catch(e) { alert("Camera error: " + e.message); }
 }
+startCamera();
+document.getElementById('flipBtn').onclick = ()=>{ useFront=!useFront; startCamera(); };
 
-function loadGallery() {
-  galleryGrid.innerHTML = '';
-  const photos = JSON.parse(localStorage.getItem('somlinkGallery') || '[]');
-  photos.forEach((item, i) => {
-    const wrap = document.createElement('div');
+// Filters
+const filtersMenu = document.getElementById('filtersMenu');
+document.getElementById('filterBtn').onclick = ()=>filtersMenu.classList.toggle('show');
+filtersMenu.querySelectorAll('button').forEach(btn=>{
+  btn.onclick=()=>{
+    currentFilter = btn.getAttribute('data-filter');
+    video.style.filter=currentFilter;
+    filtersMenu.classList.remove('show');
+  };
+});
 
-    const del = document.createElement('button');
-    del.textContent = '🗑️ Delete';
-    del.className = 'deleteBtn';
-    del.onclick = () => {
-      if (confirm('Ma hubtaa inaad tirayso sawirkan?')) {
-        photos.splice(i, 1);
-        localStorage.setItem('somlinkGallery', JSON.stringify(photos));
+// Flash effect
+function flashEffect(){ flash.style.opacity=0.8; setTimeout(()=>flash.style.opacity=0,150); }
+
+// Gallery
+const galleryPanel=document.getElementById('galleryPanel');
+const galleryGrid=document.getElementById('galleryGrid');
+document.getElementById('galleryBtn').onclick=()=>{ loadGallery(); galleryPanel.classList.add('show'); };
+document.getElementById('closeGallery').onclick=()=>galleryPanel.classList.remove('show');
+
+function loadGallery(){
+  galleryGrid.innerHTML='';
+  const photos = JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
+  photos.forEach((item,i)=>{
+    const wrap=document.createElement('div');
+    const del=document.createElement('button');
+    del.textContent='🗑️ Delete';
+    del.className='deleteBtn';
+    del.onclick=()=>{
+      if(confirm('Ma hubtaa inaad tirayso sawirkan/muuqaalkan?')){
+        photos.splice(i,1);
+        localStorage.setItem('somlinkGallery',JSON.stringify(photos));
         loadGallery();
       }
     };
     wrap.appendChild(del);
-
-    // ✅ Download Button
-    const down = document.createElement('button');
-    down.textContent = '⬇️ Download';
-    down.className = 'downloadBtn';
-    down.onclick = () => {
-      const link = document.createElement('a');
-      link.href = item.data;
-      link.download = 'SomlinkPhoto.png';
-      link.click();
-    };
-    wrap.appendChild(down);
-
-    const img = document.createElement('img');
-    img.src = item.data;
-    wrap.appendChild(img);
-
+    if(item.type==='photo'){
+      const img=document.createElement('img'); img.src=item.data; wrap.appendChild(img);
+    }else{
+      const vid=document.createElement('video'); vid.src=item.data; vid.controls=true; wrap.appendChild(vid);
+    }
     galleryGrid.appendChild(wrap);
   });
 }
-</script>
 
+// Capture
+document.getElementById('captureBtn').onclick=()=>{
+  flashEffect();
+  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+  ctx.filter=currentFilter;
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  const dataURL=canvas.toDataURL('image/png');
+  let gal=JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
+  gal.push({type:'photo',data:dataURL});
+  localStorage.setItem('somlinkGallery',JSON.stringify(gal));
+  showPreview(dataURL);
+};
+
+// Preview + Download
+function showPreview(imageData){
+  const preview=document.createElement('div');
+  preview.className='preview';
+  preview.innerHTML=`
+    <div class="preview-content">
+      <img src="${imageData}">
+      <a href="${imageData}" download="Somlink_${Date.now()}.png" class="download">⬇️ Download</a>
+      <button class="close-preview">❌</button>
+    </div>
+  `;
+  document.body.appendChild(preview);
+  preview.querySelector('.close-preview').onclick=()=>preview.remove();
+}
+
+// Video Record
+document.getElementById('recordBtn').onclick=()=>{
+  if(!isRecording) startRecord(); else stopRecord();
+};
+function startRecord(){
+  mediaRecorder=new MediaRecorder(video.srcObject);
+  recordedChunks=[];
+  mediaRecorder.ondataavailable=e=>recordedChunks.push(e.data);
+  mediaRecorder.onstop=saveVideo;
+  mediaRecorder.start();
+  isRecording=true;
+  document.getElementById('recordBtn').textContent='⏹️';
+}
+function stopRecord(){
+  mediaRecorder.stop();
+  isRecording=false;
+  document.getElementById('recordBtn').textContent='🎥';
+}
+function saveVideo(){
+  const blob=new Blob(recordedChunks,{type:'video/webm'});
+  const url=URL.createObjectURL(blob);
+  let gal=JSON.parse(localStorage.getItem('somlinkGallery')||'[]');
+  gal.push({type:'video',data:url});
+  localStorage.setItem('somlinkGallery',JSON.stringify(gal));
+  alert('🎞️ Video saved to gallery!');
+  loadGallery();
+}
+
+// AI Face Detection
+async function loadModels(){
+  await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+  detectFaces();
+}
+async function detectFaces(){
+  if(video.readyState>=2){
+    overlay.width=video.videoWidth;
+    overlay.height=video.videoHeight;
+    const detections=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions());
+    overlayCtx.clearRect(0,0,overlay.width,overlay.height);
+    detections.forEach(det=>{
+      const {x,y,width,height}=det.box;
+      overlayCtx.strokeStyle='rgba(255,0,150,0.8)';
+      overlayCtx.lineWidth=2;
+      overlayCtx.strokeRect(x,y,width,height);
+    });
+  }
+  requestAnimationFrame(detectFaces);
+}
+video.onloadedmetadata=()=>loadModels();
+</script>
 </body>
-</html>
+    </html>
